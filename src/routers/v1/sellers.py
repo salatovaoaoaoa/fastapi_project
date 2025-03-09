@@ -6,6 +6,7 @@ from src.schemas import CreatingSeller, UpdatingSeller, ReturnedAllSellers, Retu
 from icecream import ic
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.configurations import get_async_session
+from sqlalchemy.orm import selectinload
 
 sellers_router = APIRouter(tags=["seller"], prefix="/seller")
 
@@ -34,6 +35,8 @@ async def create_seller(
     session.add(new_seller)
     await session.flush()
 
+    await session.refresh(new_seller, attribute_names=['books'])
+
     return new_seller
 
 
@@ -42,7 +45,7 @@ async def create_seller(
 async def get_all_sellers(session: DBSession):
     # Хотим видеть формат
     # sellers: [{"id": 1, "first_name": "blabla", ...., "e_mail": "test@test.ru"},{...}]
-    query = select(Seller)
+    query = select(Seller).options(selectinload(Seller.books))
     result = await session.execute(query)
     sellers = result.scalars().all()
     return {"sellers": sellers}
@@ -51,8 +54,11 @@ async def get_all_sellers(session: DBSession):
 # Ручка для получения продавца по ИД
 @sellers_router.get("/{seller_id}", response_model=ReturnedSeller)
 async def get_seller(seller_id: int, session: DBSession):
-    if result := await session.get(Seller, seller_id):
-        return result
+    query = select(Seller).where(Seller.id == seller_id).options(selectinload(Seller.books))
+    result = await session.execute(query)
+    seller = result.scalar_one_or_none()
+    if seller:
+        return seller
 
     return Response(status_code=status.HTTP_404_NOT_FOUND)
 
@@ -77,6 +83,8 @@ async def update_seller(seller_id: int, new_seller_data: UpdatingSeller, session
         updated_seller.e_mail = new_seller_data.e_mail
 
         await session.flush()
+        
+        await session.refresh(updated_seller, attribute_names=['books'])
 
         return updated_seller
 

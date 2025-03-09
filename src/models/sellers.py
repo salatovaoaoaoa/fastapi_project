@@ -22,4 +22,4 @@ class Seller(BaseModel):
     password: Mapped[str] = mapped_column(String(150), nullable=False)
 
     # связь One to Many
-    books: Mapped[list["Book"]] = relationship(back_populates="seller")
+    books: Mapped[list["Book"]] = relationship(back_populates="seller", cascade='all, delete, delete-orphan')

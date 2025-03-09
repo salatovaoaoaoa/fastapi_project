@@ -26,6 +26,7 @@ async def test_create_seller(async_client):
         "first_name": "Tata",
         "last_name": "Popova",
         "e_mail": "test@example.com",
+        "books": [],
     }
 
 # Тест на получение всего списка продавцов
@@ -89,14 +90,21 @@ async def test_delete_seller(db_session, async_client):
 
     db_session.add(seller)
     await db_session.flush()
+    
+    book1 = Book(title="Book 1", author="Author 1", year=2023, pages=200, seller_id=seller.id)
+    book2 = Book(title="Book 2", author="Author 2", year=2024, pages=250, seller_id=seller.id)
+    db_session.add_all([book1, book2])
+    await db_session.flush()
 
     response = await async_client.delete(f"/api/v1/seller/{seller.id}")
 
     assert response.status_code == status.HTTP_204_NO_CONTENT
-
-    # продавец и его книги удалены
-    deleted_seller = await db_session.get(Seller, seller.id)
-    assert deleted_seller is None
+    
+    response_book1 = await async_client.get(f"/api/v1/book/{book1.id}")
+    assert response_book1.status_code == status.HTTP_404_NOT_FOUND
+    
+    response_book2 = await async_client.get(f"/api/v1/book/{book2.id}")
+    assert response_book2.status_code == status.HTTP_404_NOT_FOUND
 
 # Тест на продавца, которого нет в БД
 
