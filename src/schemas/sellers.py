@@ -1,5 +1,7 @@
 from pydantic import BaseModel, Field
 
+from src.schemas.books import ReturnedBook
+
 __all__ = ["CreatingSeller", "UpdatingSeller", "ReturnedSeller", "ReturnedAllSellers"]
 
 
@@ -23,6 +25,7 @@ class UpdatingSeller(BaseSeller):
 # Класс, валидирующий исходящие данные. Он уже содержит id
 class ReturnedSeller(BaseSeller):
     id: int
+    books: list[ReturnedBook] = Field(default_factory=list)
 
 
 # Класс для возврата массива объектов "Продавцы"
